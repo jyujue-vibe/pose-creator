@@ -278,6 +278,8 @@ const POINT_DIRS = [
   ['right', 'pointing to the right', 'ညာထိုး'],
   ['top left', 'pointing to the top left', 'အပေါ်ဘယ်ထိုး'],
   ['top right', 'pointing to the top right', 'အပေါ်ညာထိုး'],
+  ['bottom left', 'pointing to the bottom left', 'အောက်ဘယ်ထိုး'],
+  ['bottom right', 'pointing to the bottom right', 'အောက်ညာထိုး'],
 ];
 let pointSel = 0;
 function pointingIdx() { return PART_MAP.rarm.opts.findIndex(o => o[0] === 'pointing'); }
@@ -532,7 +534,7 @@ function addViewSuggestions(sec) {
 }
 
 function render() {
-  if (isHolding()) { delete sel.rhand; delete sel.lhand; }
+  if (isHolding() || isPointing()) { delete sel.rhand; delete sel.lhand; }
   const box = document.getElementById('sections');
   box.innerHTML = '';
   SINGLE_IDS.forEach(id => {
@@ -542,7 +544,7 @@ function render() {
     if (id === 'view' && sel.view !== undefined && PART_MAP.view.opts[sel.view][0] === 'back view') addViewSuggestions(sec);
   });
   PAIRS.forEach(pr => {
-    if (pr.key === 'hand' && isHolding()) return;
+    if (pr.key === 'hand' && (isHolding() || isPointing())) return;
     const wrap = document.createElement('div');
     wrap.className = 'pair-wrap';
     const head = document.createElement('div');
