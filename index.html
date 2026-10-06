@@ -238,6 +238,7 @@ const PARTS = [
     ['feet together','{side} {leg} is standing, feet together','{s}ခြေပူးရပ်'],
     ['crossed','{side} {leg} is crossed','{s}ခြေယှက်'],
     ['tiptoes','{side} {leg} is on tiptoes','{s}ခြေဖျားထောက်'],
+    ['kicking','{side} {leg} is kicking','{s}ခြေကန်'],
   ]},
   { id:'lleg', label:'Left Leg', side:'left', kind:'leg', opts:[
     ['straight','{side} {leg} is straight','{s}ခြေတန်း'],
@@ -247,6 +248,7 @@ const PARTS = [
     ['feet together','{side} {leg} is standing, feet together','{s}ခြေပူးရပ်'],
     ['crossed','{side} {leg} is crossed','{s}ခြေယှက်'],
     ['tiptoes','{side} {leg} is on tiptoes','{s}ခြေဖျားထောက်'],
+    ['kicking','{side} {leg} is kicking','{s}ခြေကန်'],
   ]},
 ];
 
@@ -284,11 +286,29 @@ const POINT_DIRS = [
 let pointSel = 0;
 function pointingIdx() { return PART_MAP.rarm.opts.findIndex(o => o[0] === 'pointing'); }
 function isPointing() { const pi = pointingIdx(); return sel.rarm === pi || sel.larm === pi; }
+const KICK_PRESETS = [
+  ['a ball', 'ဘောလုံးကန်'],
+  ['a stone', 'ကျောက်ကန်'],
+  ['the air', 'လေထဲကန်'],
+];
+let kickSel = null;
+let kickCustom = '';
+function kickingIdx() { return PART_MAP.rleg.opts.findIndex(o => o[0] === 'kicking'); }
+function isKicking() { const ki = kickingIdx(); return sel.rleg === ki || sel.lleg === ki; }
+function kickObject() {
+  if (kickCustom.trim()) return kickCustom.trim();
+  if (kickSel != null) return KICK_PRESETS[kickSel][0];
+  return null;
+}
 function optOrder(p) {
   const ids = p.opts.map((_, i) => i);
   if (p.id === 'rarm' || p.id === 'larm') {
     const hi = holdingIdx(), pi = pointingIdx();
     return [hi, pi, ...ids.filter(i => i !== hi && i !== pi)];
+  }
+  if (p.id === 'rleg' || p.id === 'lleg') {
+    const ki = kickingIdx();
+    return [ki, ...ids.filter(i => i !== ki)];
   }
   return ids;
 }
@@ -637,6 +657,28 @@ function render() {
       });
       wrap.appendChild(prow);
     }
+    if (pr.key === 'leg' && isKicking()) {
+      const krow = document.createElement('div');
+      krow.className = 'hold-row';
+      const klab = document.createElement('span');
+      klab.className = 'hold-label';
+      klab.textContent = 'Kicking:';
+      krow.appendChild(klab);
+      KICK_PRESETS.forEach(([kl, kmm], i) => {
+        const b = document.createElement('button');
+        b.className = 'chip' + (kickSel === i ? ' selected' : '');
+        b.innerHTML = `${kl}<small>${kmm}</small>`;
+        b.onclick = () => { kickSel = kickSel === i ? null : i; render(); update(); };
+        krow.appendChild(b);
+      });
+      const kinp = document.createElement('input');
+      kinp.type = 'text';
+      kinp.placeholder = 'or type a target…';
+      kinp.value = kickCustom;
+      kinp.oninput = () => { kickCustom = kinp.value; update(); };
+      krow.appendChild(kinp);
+      wrap.appendChild(krow);
+    }
     box.appendChild(wrap);
   });
   const pr = document.getElementById('presets');
@@ -800,6 +842,8 @@ function buildPrompt() {
   if (locks.length) out += ` Locked: ${locks.join('; ')}.`;
   out = out.replace(/holding an object/g, 'holding ' + holdObject());
   out = out.replace(/pointing forward/g, POINT_DIRS[pointSel][1]);
+  const ko = kickObject();
+  if (ko) out = out.replace(/(is|are) kicking/g, '$1 kicking ' + ko);
   return out;
 }
 
