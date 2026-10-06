@@ -270,11 +270,23 @@ function holdObject() {
   if (holdSel != null) return HOLD_PRESETS[holdSel];
   return 'an object';
 }
+const POINT_DIRS = [
+  ['forward', 'pointing forward', 'အရှေ့ထိုး'],
+  ['up', 'pointing up', 'အပေါ်ထိုး'],
+  ['down', 'pointing down', 'အောက်ထိုး'],
+  ['left', 'pointing to the left', 'ဘယ်ထိုး'],
+  ['right', 'pointing to the right', 'ညာထိုး'],
+  ['top left', 'pointing to the top left', 'အပေါ်ဘယ်ထိုး'],
+  ['top right', 'pointing to the top right', 'အပေါ်ညာထိုး'],
+];
+let pointSel = 0;
+function pointingIdx() { return PART_MAP.rarm.opts.findIndex(o => o[0] === 'pointing'); }
+function isPointing() { const pi = pointingIdx(); return sel.rarm === pi || sel.larm === pi; }
 function optOrder(p) {
   const ids = p.opts.map((_, i) => i);
   if (p.id === 'rarm' || p.id === 'larm') {
-    const hi = holdingIdx();
-    return [hi, ...ids.filter(i => i !== hi)];
+    const hi = holdingIdx(), pi = pointingIdx();
+    return [hi, pi, ...ids.filter(i => i !== hi && i !== pi)];
   }
   return ids;
 }
@@ -607,6 +619,22 @@ function render() {
       hrow.appendChild(inp);
       wrap.appendChild(hrow);
     }
+    if (pr.key === 'arm' && isPointing()) {
+      const prow = document.createElement('div');
+      prow.className = 'hold-row';
+      const plab = document.createElement('span');
+      plab.className = 'hold-label';
+      plab.textContent = 'Pointing:';
+      prow.appendChild(plab);
+      POINT_DIRS.forEach(([dlab, , dmm], i) => {
+        const b = document.createElement('button');
+        b.className = 'chip' + (pointSel === i ? ' selected' : '');
+        b.innerHTML = `${dlab}<small>${dmm}</small>`;
+        b.onclick = () => { pointSel = i; render(); update(); };
+        prow.appendChild(b);
+      });
+      wrap.appendChild(prow);
+    }
     box.appendChild(wrap);
   });
   const pr = document.getElementById('presets');
@@ -769,6 +797,7 @@ function buildPrompt() {
   }).map(c => c.text);
   if (locks.length) out += ` Locked: ${locks.join('; ')}.`;
   out = out.replace(/holding an object/g, 'holding ' + holdObject());
+  out = out.replace(/pointing forward/g, POINT_DIRS[pointSel][1]);
   return out;
 }
 
