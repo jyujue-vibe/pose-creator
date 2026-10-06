@@ -66,13 +66,8 @@
 <p class="sub">Pick each body part, get a ready-to-paste prompt. Runs fully offline — just open this file.</p>
 
 <div class="topbar">
-  <label>Character name <input type="text" id="charName" placeholder="The character"></label>
-  <label>Design notes <input type="text" id="designNotes" placeholder="e.g. a small robot dog with a mint-green collar" style="width:280px"></label>
+  <label>Character <input type="text" id="charName" placeholder="e.g. Lumo, a small tattoo dog" style="width:300px"></label>
   <button class="action" id="saveCharBtn" style="background:#2a3044;color:#cfd4e4;padding:8px 14px;font-size:13px;">💾 Save character</button>
-  <div class="toggle" id="bodyToggle">
-    <button data-mode="human" class="active">🧍 Human</button>
-    <button data-mode="dog">🐶 Dog</button>
-  </div>
 </div>
 <div id="charRow" style="margin-bottom:16px;"><div class="chips" id="savedChars"></div></div>
 
@@ -548,7 +543,6 @@ function render() {
 
 function buildPrompt() {
   const name = document.getElementById('charName').value.trim() || 'The character';
-  const design = document.getElementById('designNotes').value.trim();
   const bits = [];
   SINGLE_IDS.forEach(id => {
     if (id === 'view' || id === 'visibility') return;
@@ -565,7 +559,7 @@ function buildPrompt() {
     }
   });
   const v = sel.view !== undefined ? PART_MAP.view.opts[sel.view][1] : '';
-  if (!bits.length && !Object.keys(selShots).length && !v && !design) return '';
+  if (!bits.length && !Object.keys(selShots).length && !v) return '';
   const subject = v ? `${name} ${v}` : name;
   let out = bits.length ? `${subject} - ${bits.join(', ')}.` : `${subject}.`;
   const shots = Object.keys(selShots).sort((a,b) => a-b).map(i => SHOTS[i][1]);
@@ -574,7 +568,6 @@ function buildPrompt() {
     out += ` ${t[0].toUpperCase()}${t.slice(1)}.`;
   }
   if (shots.length) out += ` Shot: ${shots.join(', ')}.`;
-  if (design) out += ` Design: ${design}.`;
   const locks = LOCKED.filter(c => {
     if (!lockOn[c.id]) return false;
     if (c.id === 'fullbody' && sel.visibility !== undefined && sel.visibility !== 0) return false;
@@ -588,13 +581,6 @@ function update() {
   document.getElementById('output').textContent = buildPrompt() || 'Select body parts above…';
 }
 
-document.getElementById('bodyToggle').addEventListener('click', e => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  mode = b.dataset.mode;
-  document.querySelectorAll('#bodyToggle button').forEach(x => x.classList.toggle('active', x === b));
-  render(); update();
-});
 document.getElementById('charName').addEventListener('input', update);
 document.getElementById('copyBtn').onclick = async () => {
   const t = buildPrompt();
@@ -622,10 +608,8 @@ function renderSavedChars() {
     const b = document.createElement('button');
     b.className = 'chip';
     b.textContent = '👤 ' + c.name;
-    b.title = c.design || '';
     b.onclick = () => {
       document.getElementById('charName').value = c.name;
-      document.getElementById('designNotes').value = c.design || '';
       update();
     };
     box.appendChild(b);
@@ -634,13 +618,11 @@ function renderSavedChars() {
 }
 document.getElementById('saveCharBtn').onclick = () => {
   const name = document.getElementById('charName').value.trim() || 'The character';
-  const design = document.getElementById('designNotes').value.trim();
   const ix = savedChars.findIndex(c => c.name === name);
-  if (ix >= 0) savedChars[ix] = { name, design }; else savedChars.push({ name, design });
+  if (ix >= 0) savedChars[ix] = { name }; else savedChars.push({ name });
   persistChars();
   renderSavedChars();
 };
-document.getElementById('designNotes').addEventListener('input', update);
 
 renderSavedChars();
 render(); update();
