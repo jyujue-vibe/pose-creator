@@ -58,6 +58,7 @@
   .pair-wrap { background: #1a1e29; border: 1px solid #2a3044; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
   .pair-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .pair-head h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; }
+  .pair-head-right { display: flex; gap: 8px; align-items: center; }
   .pair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .pair-grid .section { margin-bottom: 0; }
   .both-toggle { background: #232839; border: 1px solid #343a4f; color: #9aa0b4; border-radius: 16px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
@@ -192,6 +193,9 @@ const PARTS = [
     ['waving','{side} {arm} is waving','{s}လက်လှုပ်'],
     ['holding','{side} {hand} is holding an object','{s}လက်ကပစ္စည်းကိုင်'],
     ['crossed','arms are crossed','လက်ပိုက်'],
+    ['spread wide','{side} {arm} is spread wide open','{s}လက်ဖြန့်ကား'],
+    ['behind back','{side} {arm} is behind the back','{s}လက်နောက်ထား'],
+    ['reaching forward','{side} {arm} is reaching forward','{s}လက်ဆန့်ထုတ်'],
   ]},
   { id:'larm', label:'Left Arm', side:'left', kind:'arm', opts:[
     ['at side','{side} {arm} is resting at the side','{s}လက်ဘေးချ'],
@@ -201,18 +205,27 @@ const PARTS = [
     ['waving','{side} {arm} is waving','{s}လက်လှုပ်'],
     ['holding','{side} {hand} is holding an object','{s}လက်ကပစ္စည်းကိုင်'],
     ['crossed','arms are crossed','လက်ပိုက်'],
+    ['spread wide','{side} {arm} is spread wide open','{s}လက်ဖြန့်ကား'],
+    ['behind back','{side} {arm} is behind the back','{s}လက်နောက်ထား'],
+    ['reaching forward','{side} {arm} is reaching forward','{s}လက်ဆန့်ထုတ်'],
   ]},
   { id:'rhand', label:'Right Hand', side:'right', kind:'hand', opts:[
     ['open','{side} {hand} is open','{s}လက်ဖဝါးဖြန့်'],
     ['fist','{side} {hand} is a fist','{s}လက်သီးဆုပ်'],
     ['pointing','{side} {hand} is pointing','{s}လက်ညိုးထိုး'],
     ['thumbs up','{side} {hand} is giving a thumbs up','{s}လက်မထောင်'],
+    ['palms together','{side} {hand} is pressed together in prayer','{s}လက်အုပ်ချီ'],
+    ['clapping','{side} {hand} is clapping','{s}လက်ခုပ်တီး'],
+    ['clasped','{side} {hand} is clasped together','{s}လက်ယှက်ထား'],
   ]},
   { id:'lhand', label:'Left Hand', side:'left', kind:'hand', opts:[
     ['open','{side} {hand} is open','{s}လက်ဖဝါးဖြန့်'],
     ['fist','{side} {hand} is a fist','{s}လက်သီးဆုပ်'],
     ['pointing','{side} {hand} is pointing','{s}လက်ညိုးထိုး'],
     ['thumbs up','{side} {hand} is giving a thumbs up','{s}လက်မထောင်'],
+    ['palms together','{side} {hand} is pressed together in prayer','{s}လက်အုပ်ချီ'],
+    ['clapping','{side} {hand} is clapping','{s}လက်ခုပ်တီး'],
+    ['clasped','{side} {hand} is clasped together','{s}လက်ယှက်ထား'],
   ]},
   { id:'rleg', label:'Right Leg', side:'right', kind:'leg', opts:[
     ['straight','{side} {leg} is straight','{s}ခြေတန်း'],
@@ -220,6 +233,8 @@ const PARTS = [
     ['bent','{side} {leg} is bent','{s}ခြေကွေး'],
     ['raised','{side} {leg} is raised','{s}ခြေမြှောက်'],
     ['feet together','{side} {leg} is standing, feet together','{s}ခြေပူးရပ်'],
+    ['crossed','{side} {leg} is crossed','{s}ခြေယှက်'],
+    ['tiptoes','{side} {leg} is on tiptoes','{s}ခြေဖျားထောက်'],
   ]},
   { id:'lleg', label:'Left Leg', side:'left', kind:'leg', opts:[
     ['straight','{side} {leg} is straight','{s}ခြေတန်း'],
@@ -227,6 +242,8 @@ const PARTS = [
     ['bent','{side} {leg} is bent','{s}ခြေကွေး'],
     ['raised','{side} {leg} is raised','{s}ခြေမြှောက်'],
     ['feet together','{side} {leg} is standing, feet together','{s}ခြေပူးရပ်'],
+    ['crossed','{side} {leg} is crossed','{s}ခြေယှက်'],
+    ['tiptoes','{side} {leg} is on tiptoes','{s}ခြေဖျားထောက်'],
   ]},
 ];
 
@@ -495,6 +512,17 @@ function render() {
     head.className = 'pair-head';
     const h = document.createElement('h2');
     h.textContent = mode === 'dog' ? pr.dogName : pr.name;
+    head.appendChild(h);
+    const hr = document.createElement('div');
+    hr.className = 'pair-head-right';
+    if (both[pr.key]) {
+      const rx = document.createElement('button');
+      rx.className = 'x';
+      rx.textContent = 'RESET';
+      rx.title = 'Clear both sides';
+      rx.onclick = () => { pr.ids.forEach(id => delete sel[id]); render(); update(); };
+      hr.appendChild(rx);
+    }
     const t = document.createElement('button');
     t.className = 'both-toggle' + (both[pr.key] ? ' on' : '');
     t.textContent = both[pr.key] ? 'BOTH: ON' : 'BOTH: OFF';
@@ -504,13 +532,33 @@ function render() {
       if (both[pr.key] && sel[pr.ids[0]] !== undefined) sel[pr.ids[1]] = sel[pr.ids[0]];
       render(); update();
     };
-    head.appendChild(h);
-    head.appendChild(t);
+    hr.appendChild(t);
+    head.appendChild(hr);
     wrap.appendChild(head);
-    const grid = document.createElement('div');
-    grid.className = 'pair-grid';
-    pr.ids.forEach(id => grid.appendChild(sectionEl(PART_MAP[id])));
-    wrap.appendChild(grid);
+    if (both[pr.key]) {
+      const p0 = PART_MAP[pr.ids[0]];
+      const chips = document.createElement('div');
+      chips.className = 'chips';
+      p0.opts.forEach(([lab, , mm], i) => {
+        const c = document.createElement('button');
+        const isSel = sel[p0.id] === i;
+        c.className = 'chip' + (isSel ? ' selected' : '');
+        const mmT = mm ? mm.split('{s}').join('') : '';
+        c.innerHTML = mmT ? `${lab}<small>${mmT}</small>` : lab;
+        c.onclick = () => {
+          if (sel[p0.id] === i) pr.ids.forEach(id => delete sel[id]);
+          else pr.ids.forEach(id => { sel[id] = i; });
+          render(); update();
+        };
+        chips.appendChild(c);
+      });
+      wrap.appendChild(chips);
+    } else {
+      const grid = document.createElement('div');
+      grid.className = 'pair-grid';
+      pr.ids.forEach(id => grid.appendChild(sectionEl(PART_MAP[id])));
+      wrap.appendChild(grid);
+    }
     box.appendChild(wrap);
   });
   const pr = document.getElementById('presets');
