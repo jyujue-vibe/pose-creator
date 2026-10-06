@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pose Prompt Maker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #14161c; color: #e8eaf0; padding: 24px 24px 260px; max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #9aa0b4; font-size: 13px; margin-bottom: 20px; }
+  .topbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+  .topbar label { font-size: 13px; color: #9aa0b4; }
+  input[type=text] { background: #1e2230; border: 1px solid #343a4f; color: #e8eaf0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 200px; }
+  .toggle { display: flex; background: #1e2230; border-radius: 8px; overflow: hidden; border: 1px solid #343a4f; }
+  .toggle button { background: none; border: none; color: #9aa0b4; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+  .toggle button.active { background: #4f7cff; color: #fff; }
+  .section { background: #1a1e29; border: 1px solid #2a3044; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .section h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: #232839; border: 1px solid #343a4f; color: #cfd4e4; border-radius: 20px; padding: 7px 14px; font-size: 13px; cursor: pointer; transition: all .15s; }
+  .chip:hover { border-color: #4f7cff; }
+  .chip.selected { background: #4f7cff; border-color: #4f7cff; color: #fff; }
+  .chip small { display: block; font-size: 10px; line-height: 1.4; opacity: .8; font-weight: 400; margin-top: 1px; }
+  .preset small { display: block; font-size: 10px; opacity: .7; font-weight: 400; }
+  .preset-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .preset { background: #2a2136; border: 1px solid #5a4480; color: #d8c9f5; border-radius: 10px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+  .preset:hover { background: #372b47; }
+  .output-wrap { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1e29; border-top: 1px solid #4f7cff; padding: 14px 24px; z-index: 10; }
+  .output-inner { max-width: 980px; margin: 0 auto; }
+  .layout { display: flex; gap: 16px; align-items: flex-start; }
+  .main { flex: 1; min-width: 0; margin-right: 256px; }
+  .sidebar { width: 240px; flex-shrink: 0; position: fixed; top: 16px; right: max(16px, calc(50% - 466px)); background: #1a1e29; border: 1px solid #2a3044; border-radius: 12px; padding: 16px; max-height: calc(100vh - 300px); overflow-y: auto; z-index: 5; }
+  .sidebar .preset-row { flex-direction: column; align-items: stretch; margin-bottom: 0; }
+  .sidebar .preset { text-align: left; }
+  .pair-wrap { background: #1a1e29; border: 1px solid #2a3044; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+  .pair-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .pair-head h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; }
+  .pair-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pair-grid .section { margin-bottom: 0; }
+  .both-toggle { background: #232839; border: 1px solid #343a4f; color: #9aa0b4; border-radius: 16px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .both-toggle.on { background: #4f7cff; border-color: #4f7cff; color: #fff; }
+  @media (max-width: 820px) {
+    .layout { flex-direction: column; }
+    .main { margin-right: 0; }
+    .sidebar { width: 100%; position: static; max-height: none; }
+    .pair-grid { grid-template-columns: 1fr; }
+  }
+  .output-wrap h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; margin-bottom: 10px; }
+  #output { background: #10131b; border-radius: 8px; padding: 14px; font-size: 14px; line-height: 1.7; min-height: 70px; color: #f0e6c8; white-space: pre-wrap; }
+  .btnrow { display: flex; gap: 10px; margin-top: 12px; }
+  button.action { border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; cursor: pointer; font-weight: 600; }
+  #copyBtn { background: #4f7cff; color: #fff; flex: 1; }
+  #copyBtn:hover { background: #3d63d6; }
+  #clearBtn { background: #2a3044; color: #cfd4e4; }
+  #randomBtn { background: #2a3044; color: #cfd4e4; }
+  #copied { color: #7ee2a8; font-size: 13px; margin-left: 8px; opacity: 0; transition: opacity .3s; }
+  .x { background: none; border: none; color: #ff6b6b; font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+  .x:hover { color: #ff9c9c; background: #2a2130; }
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="main">
+<h1>🎭 Pose Prompt Maker</h1>
+<p class="sub">Pick each body part, get a ready-to-paste prompt. Runs fully offline — just open this file.</p>
+
+<div class="topbar">
+  <label>Character name <input type="text" id="charName" placeholder="The character"></label>
+  <label>Design notes <input type="text" id="designNotes" placeholder="e.g. a small robot dog with a mint-green collar" style="width:280px"></label>
+  <button class="action" id="saveCharBtn" style="background:#2a3044;color:#cfd4e4;padding:8px 14px;font-size:13px;">💾 Save character</button>
+  <div class="toggle" id="bodyToggle">
+    <button data-mode="human" class="active">🧍 Human</button>
+    <button data-mode="dog">🐶 Dog</button>
+  </div>
+</div>
+<div id="charRow" style="margin-bottom:16px;"><div class="chips" id="savedChars"></div></div>
+
+<div id="sections"></div>
+</div>
+<aside class="sidebar">
+<h2 style="font-size:14px;color:#8f96ad;margin-bottom:10px;">QUICK PRESETS</h2>
+<div class="preset-row" id="presets"></div>
+</aside>
+</div>
+
+<div class="output-wrap">
+<div class="output-inner">
+  <h2>Generated Prompt <span id="copied">✓ copied!</span></h2>
+  <div id="output">Select body parts above…</div>
+  <div class="btnrow">
+    <button class="action" id="copyBtn">📋 Copy Prompt</button>
+    <button class="action" id="randomBtn">🎲 Random</button>
+    <button class="action" id="clearBtn">Clear</button>
+  </div>
+</div>
+</div>
+
+<script>
+const MODES = {
+  human: { arm: 'arm', hand: 'hand', leg: 'leg' },
+  dog:   { arm: 'front leg', hand: 'paw', leg: 'hind leg' }
+};
+let mode = 'human';
+const sel = {}; // part -> option index
+
+const PARTS = [
+  { id:'head', label:'Head', opts:[
+    ['facing camera','head is facing the camera','မျက်နှာတည့်တည့်'],
+    ['facing right','head is facing right','ခေါင်းညာလှည့်'],
+    ['facing left','head is facing left','ခေါင်းဘယ်လှည့်'],
+    ['looking upward','head is looking upward','ခေါင်းမော့'],
+    ['looking downward','head is looking downward','ခေါင်းငုံ့'],
+    ['tilted right','head is tilted to the right','ခေါင်းညာစောင်း'],
+    ['tilted left','head is tilted to the left','ခေါင်းဘယ်စောင်း'],
+  ]},
+  { id:'eyes', label:'Eyes', opts:[
+    ['at camera','eyes are looking at the camera','ကင်မရာကိုကြည့်'],
+    ['looking right','eyes are looking to the right','ညာဘက်ကြည့်'],
+    ['looking left','eyes are looking to the left','ဘယ်ဘက်ကြည့်'],
+    ['looking upward','eyes are looking upward','အပေါ်ကြည့်'],
+    ['looking downward','eyes are looking downward','အောက်ကြည့်'],
+    ['closed','eyes are closed','မျက်လုံးမှိတ်'],
+    ['winking','winking with one eye','မျက်လုံးတစ်ဖက်မှိတ်'],
+  ]},
+  { id:'mouth', label:'Mouth', opts:[
+    ['closed','mouth is closed','ပါးစပ်ပိတ်'],
+    ['smiling','mouth is smiling','ပြုံး'],
+    ['open talking','mouth is open, talking','စကားပြော'],
+    ['open singing','mouth is open, singing','သီချင်းဆို'],
+    ['frowning','mouth is frowning','မျက်နှာရှုံ့'],
+    ['tongue out','tongue is sticking out','လျှာထုတ်'],
+    ['biting lip','biting the lower lip','နှုတ်ခမ်းကိုက်'],
+  ]},
+  { id:'body', label:'Body Position', opts:[
+    ['standing upright','body is standing upright','မတ်တပ်ရပ်'],
+    ['tilted left','body is tilted to the left','ကိုယ်ဘယ်စောင်း'],
+    ['tilted right','body is tilted to the right','ကိုယ်ညာစောင်း'],
+    ['leaning forward','body is leaning forward','အရှေ့ကိုင်း'],
+    ['leaning back','body is leaning back','အနောက်လှန်'],
+    ['sitting','body is sitting','ထိုင်'],
+    ['crouching','body is crouching','ဒူးကွေးထိုင်'],
+    ['lying down','body is lying down','လှဲ'],
+  ]},
+  { id:'view', label:'View', opts:[
+    ['front facing','facing the camera','အရှေ့တည့်တည့်မြင်'],
+    ['3/4 view','in three-quarter view','၃/၄ မြင်ကွင်း'],
+    ['slightly 3/4 view','in slight three-quarter view','၃/၄ အနည်းငယ်မြင်'],
+    ['profile side view','in profile side view','ဘေးတစ်ခြမ်းမြင်'],
+    ['back view','seen from behind','နောက်ကျောမြင်'],
+  ]},
+  { id:'visibility', label:'Visibility', opts:[
+    ['full body','full body visible','တစ်ကိုယ်လုံးမြင်'],
+    ['upper body','upper body visible','ခါးအထက်မြင်'],
+    ['head and shoulders','head and shoulders visible','ခေါင်းပုခုံးမြင်'],
+  ]},
+  { id:'rarm', label:'Right Arm', side:'right', kind:'arm', opts:[
+    ['at side','{side} {arm} is resting at the side','{s}လက်ဘေးချ'],
+    ['raised up','{side} {arm} is raised up','{s}လက်မြှောက်'],
+    ['on hip','{side} {hand} is on the hip','{s}လက်ခါးထောက်'],
+    ['pointing','{side} {arm} is pointing forward','{s}လက်ညိုးထိုး'],
+    ['waving','{side} {arm} is waving','{s}လက်လှုပ်'],
+    ['holding','{side} {hand} is holding an object','{s}လက်ကပစ္စည်းကိုင်'],
+    ['crossed','arms are crossed','လက်ပိုက်'],
+  ]},
+  { id:'larm', label:'Left Arm', side:'left', kind:'arm', opts:[
+    ['at side','{side} {arm} is resting at the side','{s}လက်ဘေးချ'],
+    ['raised up','{side} {arm} is raised up','{s}လက်မြှောက်'],
+    ['on hip','{side} {hand} is on the hip','{s}လက်ခါးထောက်'],
+    ['pointing','{side} {arm} is pointing forward','{s}လက်ညိုးထိုး'],
+    ['waving','{side} {arm} is waving','{s}လက်လှုပ်'],
+    ['holding','{side} {hand} is holding an object','{s}လက်ကပစ္စည်းကိုင်'],
+    ['crossed','arms are crossed','လက်ပိုက်'],
+  ]},
+  { id:'rhand', label:'Right Hand', side:'right', kind:'hand', opts:[
+    ['open','{side} {hand} is open','{s}လက်ဖဝါးဖြန့်'],
+    ['fist','{side} {hand} is a fist','{s}လက်သီးဆုပ်'],
+    ['pointing','{side} {hand} is pointing','{s}လက်ညိုးထိုး'],
+    ['thumbs up','{side} {hand} is giving a thumbs up','{s}လက်မထောင်'],
+  ]},
+  { id:'lhand', label:'Left Hand', side:'left', kind:'hand', opts:[
+    ['open','{side} {hand} is open','{s}လက်ဖဝါးဖြန့်'],
+    ['fist','{side} {hand} is a fist','{s}လက်သီးဆုပ်'],
+    ['pointing','{side} {hand} is pointing','{s}လက်ညိုးထိုး'],
+    ['thumbs up','{side} {hand} is giving a thumbs up','{s}လက်မထောင်'],
+  ]},
+  { id:'rleg', label:'Right Leg', side:'right', kind:'leg', opts:[
+    ['straight','{side} {leg} is straight','{s}ခြေတန်း'],
+    ['stepping forward','{side} {leg} is stepping forward','{s}ခြေလှမ်း'],
+    ['bent','{side} {leg} is bent','{s}ခြေကွေး'],
+    ['raised','{side} {leg} is raised','{s}ခြေမြှောက်'],
+  ]},
+  { id:'lleg', label:'Left Leg', side:'left', kind:'leg', opts:[
+    ['straight','{side} {leg} is straight','{s}ခြေတန်း'],
+    ['stepping forward','{side} {leg} is stepping forward','{s}ခြေလှမ်း'],
+    ['bent','{side} {leg} is bent','{s}ခြေကွေး'],
+    ['raised','{side} {leg} is raised','{s}ခြေမြှောက်'],
+  ]},
+];
+
+const SINGLE_IDS = ['view','visibility','head','eyes','mouth','body'];
+const PAIRS = [
+  { ids:['rarm','larm'], key:'arm', name:'Arms', dogName:'Front Legs' },
+  { ids:['rhand','lhand'], key:'hand', name:'Hands', dogName:'Paws' },
+  { ids:['rleg','lleg'], key:'leg', name:'Legs', dogName:'Hind Legs' },
+];
+const both = { arm:false, hand:false, leg:false };
+const PART_MAP = {};
+PARTS.forEach(p => { PART_MAP[p.id] = p; });
+function pairOf(id) { return PAIRS.find(pr => pr.ids.includes(id)); }
+function bothFill(text, kind) {
+  const plural = { arm: mode === 'dog' ? 'both front legs' : 'both arms',
+                   hand: mode === 'dog' ? 'both paws' : 'both hands',
+                   leg: mode === 'dog' ? 'both hind legs' : 'both legs' }[kind];
+  let t = text.replace('{side} ', '').replace('{side}', '')
+              .replace('{arm}', plural).replace('{hand}', plural).replace('{leg}', plural);
+  if (!t.startsWith('both')) t = 'both ' + t;
+  return t.replace(' is ', ' are ');
+}
+
+const SHOTS = [
+  ['close-up','close-up','အနီးကပ်ရိုက်'],
+  ['medium shot','medium shot','တစ်ဝက်ရိုက်'],
+  ['wide shot','wide shot','အကျယ်ရိုက်'],
+  ['high angle','high angle','အပေါ်စီးရိုက်'],
+  ['low angle','low angle','အောက်စီးရိုက်'],
+  ['eye level','eye level','မျက်လုံးအဆင့်ရိုက်'],
+  ['over-the-shoulder','over-the-shoulder','ပုခုံးကျော်ရိုက်'],
+  ['dutch angle','dutch angle','စောင်းရိုက်'],
+];
+const selShots = {}; // shot index -> true (multi-select)
+
+const LOCKED = [
+  { id:'onechar', label:'🔒 one character', text:'one character per image on a pure white background with no shadows or gradients' },
+  { id:'leftright', label:'🔒 frame left/right', text:"left and right always mean the image frame's left/right, never the character's anatomical left/right" },
+  { id:'digits', label:'🔒 digit counts', text:'preserve the exact finger and toe counts from the reference image — never extra, missing, or malformed digits' },
+  { id:'nonails', label:'🔒 no nails', text:'absolutely no fingernails or nail marks unless the reference shows them' },
+  { id:'hands', label:'🔒 natural hands', text:'hands at natural size relative to the body in relaxed natural poses, never oversized or splayed' },
+  { id:'fullbody', label:'🔒 full body', text:'full body fully inside the frame with clear margins on all sides, no cropping or cut-off parts' },
+  { id:'design', label:'🔒 design lock', text:'keep the exact character design from the reference image, never invent new details or let the design drift' },
+  { id:'proportion', label:'🔒 proportions', text:'preserve the body proportions measured from the reference image exactly' },
+];
+const lockOn = {};
+LOCKED.forEach(c => { lockOn[c.id] = true; });
+
+const EXPRESSIONS = [
+  { label:'😊 happy', text:'with a happy expression', mm:'ပျော်ရွှင်', suggestions:[
+    { name:'🙌 cheering', map:{ mouth:1, head:3, rarm:1, larm:1 } },
+    { name:'😄 smile at camera', map:{ mouth:1, eyes:0, head:0 } },
+  ]},
+  { label:'😢 sad', text:'with a sad expression', mm:'ဝမ်းနည်း', suggestions:[
+    { name:'😞 head down', map:{ head:4, eyes:4, body:3, rarm:0, larm:0 } },
+    { name:'😢 wiping tears', map:{ head:4, rarm:1, rhand:0 } },
+  ]},
+  { label:'😠 angry', text:'with an angry expression', mm:'ဒေါသ', suggestions:[
+    { name:'😠 fists clenched', map:{ mouth:4, eyes:0, rhand:1, lhand:1, rarm:0, larm:0 } },
+    { name:'👉 pointing blame', map:{ mouth:4, rarm:3, eyes:0, head:0 } },
+  ]},
+  { label:'😲 surprised', text:'with a surprised expression', mm:'အံ့အားသင့်', suggestions:[
+    { name:'😲 hands up', map:{ mouth:2, rarm:1, larm:1, eyes:0 } },
+  ]},
+  { label:'🤔 thinking', text:'with a thoughtful expression', mm:'စဉ်းစား', suggestions:[
+    { name:'🤔 head scratch', map:{ head:5, eyes:3, rarm:1 } },
+    { name:'🧐 chin in hand', map:{ head:4, eyes:4, rarm:0, larm:0 } },
+  ]},
+  { label:'😨 scared', text:'with a scared expression', mm:'ကြောက်', suggestions:[
+    { name:'😨 frozen', map:{ mouth:2, eyes:0, rarm:1, larm:1, body:4 } },
+  ]},
+  { label:'🤣 laughing', text:'laughing happily', mm:'ရယ်', suggestions:[
+    { name:'🤣 head back laughing', map:{ mouth:3, head:3, eyes:5 } },
+  ]},
+  { label:'😭 crying', text:'crying', mm:'ငို', suggestions:[
+    { name:'😭 bawling', map:{ mouth:2, eyes:5, head:4, rarm:1, rhand:0 } },
+  ]},
+  { label:'😕 confused', text:'with a confused expression', mm:'တွေဝေ', suggestions:[
+    { name:'🤷 shrug', map:{ head:5, eyes:1, rarm:1, larm:1 } },
+  ]},
+  { label:'😤 proud', text:'with a proud expression', mm:'ဂုဏ်ယူ', suggestions:[
+    { name:'😤 chin up', map:{ head:3, eyes:3, rarm:2, mouth:0 } },
+  ]},
+  { label:'🙈 shy', text:'with a shy expression', mm:'ရှက်', suggestions:[
+    { name:'🙈 looking away', map:{ head:2, eyes:2, body:1 } },
+  ]},
+  { label:'😴 sleepy', text:'looking sleepy', mm:'အိပ်ချင်', suggestions:[
+    { name:'😴 nodding off', map:{ eyes:5, head:4, body:3 } },
+  ]},
+  { label:'😍 in love', text:'with a lovestruck expression', mm:'ချစ်စိတ်', suggestions:[
+    { name:'😍 lovestruck', map:{ mouth:1, eyes:0, head:5 } },
+  ]},
+  { label:'✊ determined', text:'with a determined expression', mm:'စိတ်ပိုင်းဖြတ်', suggestions:[
+    { name:'✊ fist raised', map:{ mouth:0, eyes:0, rarm:1, rhand:1 } },
+  ]},
+  { label:'😏 mischievous', text:'with a mischievous grin', mm:'နောက်ပြောင်', suggestions:[
+    { name:'😏 side glance', map:{ head:1, eyes:1, mouth:1 } },
+  ]},
+  { label:'🤩 excited', text:'with an excited expression', mm:'စိတ်လှုပ်', suggestions:[
+    { name:'🙌 jumping with joy', map:{ mouth:1, head:3, rarm:1, larm:1 } },
+    { name:'🤩 wide-eyed', map:{ eyes:0, mouth:2, head:0 } },
+  ]},
+  { label:'🥱 bored', text:'with a bored expression', mm:'ပျင်း', suggestions:[
+    { name:'🥱 yawning', map:{ mouth:2, eyes:5 } },
+    { name:'😑 cheek on hand', map:{ head:5, eyes:4 } },
+  ]},
+  { label:'😳 embarrassed', text:'with an embarrassed expression', mm:'ရှက်ရွံ့', suggestions:[
+    { name:'😳 scratching cheek', map:{ head:1, eyes:2, rarm:1, rhand:0 } },
+    { name:'🙈 looking down shyly', map:{ head:4, eyes:4 } },
+  ]},
+  { label:'🔍 curious', text:'with a curious expression', mm:'စိတ်ဝင်', suggestions:[
+    { name:'🔍 leaning in', map:{ head:0, eyes:0, body:3 } },
+    { name:'🤨 raised eyebrow', map:{ head:5, eyes:1 } },
+  ]},
+  { label:'🤢 disgusted', text:'with a disgusted expression', mm:'ရွံရှာ', suggestions:[
+    { name:'🤢 turning away', map:{ head:2, eyes:2, mouth:4 } },
+  ]},
+  { label:'😌 relieved', text:'with a relieved expression', mm:'စိတ်အေး', suggestions:[
+    { name:'😌 sigh of relief', map:{ eyes:5, mouth:1, head:4 } },
+  ]},
+];
+
+const PRESET_MM = {
+  '🧍 Standing':'မတ်တပ်ရပ်ပုံ', '🚶 Walking':'လမ်းလျှောက်ပုံ', '🪑 Sitting':'ထိုင်ပုံ',
+  '😎 Confident':'ယုံကြည်မှုရှိပုံ', '👋 Waving hi':'နှုတ်ဆက်ပုံ',
+  '🎸 Guitar':'ဂစ်တာတီးပုံ', '😲 Surprised':'အံ့အားသင့်ပုံ',
+};
+
+const PRESETS = {
+  '🧍 Standing':   { head:0, eyes:0, body:0, rarm:0, larm:0, rleg:0, lleg:0 },
+  '🚶 Walking':    { head:0, eyes:1, body:0, rarm:0, larm:0, rleg:1, lleg:0 },
+  '🪑 Sitting':    { head:0, eyes:0, body:5, rarm:0, larm:0, rleg:2, lleg:2 },
+  '😎 Confident':  { head:1, eyes:1, mouth:1, body:2, rarm:2, larm:0, rleg:0, lleg:0 },
+  '👋 Waving hi':  { head:0, eyes:0, mouth:1, body:0, rarm:1, larm:0, rleg:0, lleg:0 },
+  '🎸 Guitar':     { head:4, eyes:4, body:0, rarm:5, larm:5, rleg:0, lleg:0 },
+  '😲 Surprised':  { head:0, eyes:0, mouth:2, body:0, rarm:1, larm:1 },
+};
+
+function fill(text, part) {
+  const m = MODES[mode];
+  return text.replace('{side}', part.side || '')
+             .replace('{arm}', m.arm).replace('{hand}', m.hand).replace('{leg}', m.leg);
+}
+
+function renderExpression(box) {
+  const sec = document.createElement('div');
+  sec.className = 'section';
+  const h = document.createElement('h2');
+  h.innerHTML = `Expression `;
+  const x = document.createElement('button');
+  x.className = 'x';
+  x.textContent = 'reset';
+  x.title = 'Remove expression';
+  x.onclick = () => { delete sel.expression; render(); update(); };
+  h.appendChild(x);
+  sec.appendChild(h);
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  EXPRESSIONS.forEach((e, i) => {
+    const c = document.createElement('button');
+    const isSel = sel.expression === i;
+    c.className = 'chip' + (isSel ? ' selected' : '');
+    c.innerHTML = (isSel && e.mm) ? `${e.label}<small>${e.mm}</small>` : e.label;
+    c.onclick = () => { sel.expression = sel.expression === i ? undefined : i; render(); update(); };
+    chips.appendChild(c);
+  });
+  sec.appendChild(chips);
+  if (sel.expression !== undefined) {
+    const sug = EXPRESSIONS[sel.expression].suggestions;
+    if (sug && sug.length) {
+      const t = document.createElement('div');
+      t.style.cssText = 'font-size:12px;color:#8f96ad;margin:10px 0 6px;';
+      t.textContent = '💡 Matching poses — tap to apply:';
+      sec.appendChild(t);
+      const row = document.createElement('div');
+      row.className = 'preset-row';
+      row.style.marginBottom = '0';
+      sug.forEach(s => {
+        const b = document.createElement('button');
+        b.className = 'preset';
+        b.textContent = s.name;
+        b.onclick = () => { Object.assign(sel, s.map); render(); update(); };
+        row.appendChild(b);
+      });
+      sec.appendChild(row);
+    }
+  }
+  box.appendChild(sec);
+}
+
+function sectionEl(p) {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    let label = p.label;
+    if (mode === 'dog') {
+      label = label.replace('Arm', 'Front Leg').replace('Hand', 'Paw').replace('Leg', 'Hind Leg');
+    }
+    const h = document.createElement('h2');
+    h.innerHTML = `${label} `;
+    const x = document.createElement('button');
+    x.className = 'x';
+    x.textContent = 'reset';
+    x.title = 'Remove this part';
+    x.onclick = () => { const pr = pairOf(p.id); if (pr && both[pr.key]) pr.ids.forEach(id => delete sel[id]); else delete sel[p.id]; render(); update(); };
+    h.appendChild(x);
+    sec.appendChild(h);
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    p.opts.forEach(([lab, , mm], i) => {
+      const c = document.createElement('button');
+      const isSel = sel[p.id] === i;
+      c.className = 'chip' + (isSel ? ' selected' : '');
+      const mmT = mm ? mm.split('{s}').join(p.side === 'right' ? 'ညာ' : p.side === 'left' ? 'ဘယ်' : '') : '';
+      c.innerHTML = (isSel && mmT) ? `${lab}<small>${mmT}</small>` : lab;
+      c.onclick = () => {
+        const pr = pairOf(p.id);
+        if (sel[p.id] === i) {
+          if (pr && both[pr.key]) pr.ids.forEach(id => delete sel[id]); else delete sel[p.id];
+        } else if (pr && both[pr.key]) {
+          pr.ids.forEach(id => { sel[id] = i; });
+        } else sel[p.id] = i;
+        render(); update();
+      };
+      chips.appendChild(c);
+    });
+    sec.appendChild(chips);
+    return sec;
+}
+
+function addViewSuggestions(sec) {
+  const sug = [
+    { name:'👀 over right shoulder', map:{ head:1, eyes:1 } },
+    { name:'👀 over left shoulder', map:{ head:2, eyes:2 } },
+    { name:'🙈 head down', map:{ head:4, eyes:4 } },
+  ];
+  const t = document.createElement('div');
+  t.style.cssText = 'font-size:12px;color:#8f96ad;margin:10px 0 6px;';
+  t.textContent = '💡 Back-view details — tap to apply:';
+  sec.appendChild(t);
+  const row = document.createElement('div');
+  row.className = 'preset-row';
+  row.style.marginBottom = '0';
+  sug.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'preset';
+    b.textContent = s.name;
+    b.onclick = () => { Object.assign(sel, s.map); render(); update(); };
+    row.appendChild(b);
+  });
+  sec.appendChild(row);
+}
+
+function render() {
+  const box = document.getElementById('sections');
+  box.innerHTML = '';
+  SINGLE_IDS.forEach(id => {
+    const sec = sectionEl(PART_MAP[id]);
+    box.appendChild(sec);
+    if (id === 'mouth') renderExpression(box);
+    if (id === 'view' && sel.view !== undefined && PART_MAP.view.opts[sel.view][0] === 'back view') addViewSuggestions(sec);
+  });
+  PAIRS.forEach(pr => {
+    const wrap = document.createElement('div');
+    wrap.className = 'pair-wrap';
+    const head = document.createElement('div');
+    head.className = 'pair-head';
+    const h = document.createElement('h2');
+    h.textContent = mode === 'dog' ? pr.dogName : pr.name;
+    const t = document.createElement('button');
+    t.className = 'both-toggle' + (both[pr.key] ? ' on' : '');
+    t.textContent = both[pr.key] ? 'both: on' : 'both: off';
+    t.title = 'Mirror the same selection on both sides';
+    t.onclick = () => {
+      both[pr.key] = !both[pr.key];
+      if (both[pr.key] && sel[pr.ids[0]] !== undefined) sel[pr.ids[1]] = sel[pr.ids[0]];
+      render(); update();
+    };
+    head.appendChild(h);
+    head.appendChild(t);
+    wrap.appendChild(head);
+    const grid = document.createElement('div');
+    grid.className = 'pair-grid';
+    pr.ids.forEach(id => grid.appendChild(sectionEl(PART_MAP[id])));
+    wrap.appendChild(grid);
+    box.appendChild(wrap);
+  });
+  const pr = document.getElementById('presets');
+  pr.innerHTML = '';
+  Object.entries(PRESETS).forEach(([name, map]) => {
+    const b = document.createElement('button');
+    b.className = 'preset';
+    b.innerHTML = `${name}<small>${PRESET_MM[name] || ''}</small>`;
+    b.onclick = () => { Object.keys(sel).forEach(k => delete sel[k]); Object.assign(sel, map); render(); update(); };
+    pr.appendChild(b);
+  });
+
+  // Camera shots section (multi-select)
+  const ssec = document.createElement('div');
+  ssec.className = 'section';
+  const sh = document.createElement('h2');
+  sh.innerHTML = `Camera Shot `;
+  const sx = document.createElement('button');
+  sx.className = 'x';
+  sx.textContent = 'reset';
+  sx.title = 'Remove all shots';
+  sx.onclick = () => { Object.keys(selShots).forEach(k => delete selShots[k]); render(); update(); };
+  sh.appendChild(sx);
+  ssec.appendChild(sh);
+  const schips = document.createElement('div');
+  schips.className = 'chips';
+  SHOTS.forEach(([lab, , mm], i) => {
+    const c = document.createElement('button');
+    const isSel = !!selShots[i];
+    c.className = 'chip' + (isSel ? ' selected' : '');
+    c.innerHTML = (isSel && mm) ? `${lab}<small>${mm}</small>` : lab;
+    c.onclick = () => { selShots[i] = !selShots[i]; if (!selShots[i]) delete selShots[i]; render(); update(); };
+    schips.appendChild(c);
+  });
+  ssec.appendChild(schips);
+  box.appendChild(ssec);
+
+  // Locked conditions section
+  const lsec = document.createElement('div');
+  lsec.className = 'section';
+  const lh = document.createElement('h2');
+  lh.innerHTML = `Locked Conditions `;
+  const lx = document.createElement('button');
+  lx.className = 'x';
+  lx.textContent = 'reset';
+  lx.title = 'Re-enable all locked conditions';
+  lx.onclick = () => { LOCKED.forEach(c => { lockOn[c.id] = true; }); render(); update(); };
+  lh.appendChild(lx);
+  lsec.appendChild(lh);
+  const lchips = document.createElement('div');
+  lchips.className = 'chips';
+  LOCKED.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (lockOn[c.id] ? ' selected' : '');
+    b.textContent = c.label;
+    b.title = c.text;
+    b.onclick = () => { lockOn[c.id] = !lockOn[c.id]; render(); update(); };
+    lchips.appendChild(b);
+  });
+  lsec.appendChild(lchips);
+  const lnote = document.createElement('div');
+  lnote.style.cssText = 'font-size:12px;color:#8f96ad;margin-top:10px;';
+  lnote.textContent = 'Full-body lock auto-skips when Visibility is not full body.';
+  lsec.appendChild(lnote);
+  box.appendChild(lsec);
+}
+
+function buildPrompt() {
+  const name = document.getElementById('charName').value.trim() || 'The character';
+  const design = document.getElementById('designNotes').value.trim();
+  const bits = [];
+  SINGLE_IDS.forEach(id => {
+    if (id === 'view' || id === 'visibility') return;
+    const p = PART_MAP[id];
+    if (sel[p.id] !== undefined) bits.push(fill(p.opts[sel[p.id]][1], p));
+    if (id === 'mouth' && sel.expression !== undefined) bits.push(EXPRESSIONS[sel.expression].text);
+  });
+  PAIRS.forEach(pr => {
+    const r = PART_MAP[pr.ids[0]], l = PART_MAP[pr.ids[1]];
+    if (both[pr.key] && sel[r.id] !== undefined && sel[r.id] === sel[l.id]) {
+      bits.push(bothFill(r.opts[sel[r.id]][1], pr.key));
+    } else {
+      [r, l].forEach(p => { if (sel[p.id] !== undefined) bits.push(fill(p.opts[sel[p.id]][1], p)); });
+    }
+  });
+  const v = sel.view !== undefined ? PART_MAP.view.opts[sel.view][1] : '';
+  if (!bits.length && !Object.keys(selShots).length && !v && !design) return '';
+  const subject = v ? `${name} ${v}` : name;
+  let out = bits.length ? `${subject} - ${bits.join(', ')}.` : `${subject}.`;
+  const shots = Object.keys(selShots).sort((a,b) => a-b).map(i => SHOTS[i][1]);
+  if (sel.visibility !== undefined) {
+    const t = PART_MAP.visibility.opts[sel.visibility][1];
+    out += ` ${t[0].toUpperCase()}${t.slice(1)}.`;
+  }
+  if (shots.length) out += ` Shot: ${shots.join(', ')}.`;
+  if (design) out += ` Design: ${design}.`;
+  const locks = LOCKED.filter(c => {
+    if (!lockOn[c.id]) return false;
+    if (c.id === 'fullbody' && sel.visibility !== undefined && sel.visibility !== 0) return false;
+    return true;
+  }).map(c => c.text);
+  if (locks.length) out += ` Locked: ${locks.join('; ')}.`;
+  return out;
+}
+
+function update() {
+  document.getElementById('output').textContent = buildPrompt() || 'Select body parts above…';
+}
+
+document.getElementById('bodyToggle').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  mode = b.dataset.mode;
+  document.querySelectorAll('#bodyToggle button').forEach(x => x.classList.toggle('active', x === b));
+  render(); update();
+});
+document.getElementById('charName').addEventListener('input', update);
+document.getElementById('copyBtn').onclick = async () => {
+  const t = buildPrompt();
+  if (!t) return;
+  try { await navigator.clipboard.writeText(t); }
+  catch { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  const el = document.getElementById('copied');
+  el.style.opacity = 1;
+  setTimeout(() => el.style.opacity = 0, 1500);
+};
+document.getElementById('clearBtn').onclick = () => { Object.keys(sel).forEach(k => delete sel[k]); Object.keys(selShots).forEach(k => delete selShots[k]); render(); update(); };
+document.getElementById('randomBtn').onclick = () => {
+  PARTS.forEach(p => { sel[p.id] = Math.floor(Math.random() * p.opts.length); });
+  PAIRS.forEach(pr => { if (both[pr.key]) sel[pr.ids[1]] = sel[pr.ids[0]]; });
+  render(); update();
+};
+
+let savedChars = [];
+try { savedChars = JSON.parse(localStorage.getItem('pm_characters') || '[]'); } catch(e) { savedChars = []; }
+function persistChars() { try { localStorage.setItem('pm_characters', JSON.stringify(savedChars)); } catch(e) {} }
+function renderSavedChars() {
+  const box = document.getElementById('savedChars');
+  box.innerHTML = '';
+  savedChars.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = '👤 ' + c.name;
+    b.title = c.design || '';
+    b.onclick = () => {
+      document.getElementById('charName').value = c.name;
+      document.getElementById('designNotes').value = c.design || '';
+      update();
+    };
+    box.appendChild(b);
+  });
+  document.getElementById('charRow').style.display = savedChars.length ? '' : 'none';
+}
+document.getElementById('saveCharBtn').onclick = () => {
+  const name = document.getElementById('charName').value.trim() || 'The character';
+  const design = document.getElementById('designNotes').value.trim();
+  const ix = savedChars.findIndex(c => c.name === name);
+  if (ix >= 0) savedChars[ix] = { name, design }; else savedChars.push({ name, design });
+  persistChars();
+  renderSavedChars();
+};
+document.getElementById('designNotes').addEventListener('input', update);
+
+renderSavedChars();
+render(); update();
+</script>
+</body>
+</html>
