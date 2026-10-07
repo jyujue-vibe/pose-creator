@@ -60,6 +60,8 @@
   .preset-h { font-size: 13px; color: #8f96ad; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 8px; }
   .preset-h:first-child { margin-top: 0; }
   .preset-empty { color: #6b7288; font-size: 13px; grid-column: 1 / -1; }
+  .preset-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .preset-panel { background: #1a1e29; border: 1px solid #2a3044; border-radius: 14px; padding: 16px; }
   #presetModal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .modal-box { background: #1a1e29; border: 1px solid #343a4f; border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; }
   .modal-box h3 { margin-bottom: 14px; font-size: 16px; }
@@ -79,6 +81,7 @@
   @media (max-width: 820px) {
     .pair-grid { grid-template-columns: 1fr; }
     .lock-grid { grid-template-columns: 1fr; }
+    .preset-panels { grid-template-columns: 1fr; }
     .hero { padding: 26px 20px 22px; }
   }
   .output-wrap h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; margin-bottom: 10px; }
@@ -700,10 +703,14 @@ function render() {
   });
   const pr = document.getElementById('presets');
   pr.innerHTML = '';
+  const panels = document.createElement('div');
+  panels.className = 'preset-panels';
+  const bpanel = document.createElement('div');
+  bpanel.className = 'preset-panel';
   const bh = document.createElement('h3');
   bh.className = 'preset-h';
   bh.textContent = 'Built-in';
-  pr.appendChild(bh);
+  bpanel.appendChild(bh);
   const bgrid = document.createElement('div');
   bgrid.className = 'preset-grid';
   Object.entries(PRESETS).forEach(([name, map]) => {
@@ -713,11 +720,14 @@ function render() {
     b.onclick = () => { Object.keys(sel).forEach(k => delete sel[k]); Object.assign(sel, map); render(); update(); switchTab('create'); };
     bgrid.appendChild(b);
   });
-  pr.appendChild(bgrid);
+  bpanel.appendChild(bgrid);
+  panels.appendChild(bpanel);
+  const spanel = document.createElement('div');
+  spanel.className = 'preset-panel';
   const svh = document.createElement('h3');
   svh.className = 'preset-h';
   svh.textContent = 'Saved';
-  pr.appendChild(svh);
+  spanel.appendChild(svh);
   const sgrid = document.createElement('div');
   sgrid.className = 'preset-grid';
   if (!savedPresets.length) {
@@ -750,7 +760,9 @@ function render() {
     wrap.appendChild(x);
     sgrid.appendChild(wrap);
   });
-  pr.appendChild(sgrid);
+  spanel.appendChild(sgrid);
+  panels.appendChild(spanel);
+  pr.appendChild(panels);
 
   // Camera shots section (multi-select)
   const ssec = document.createElement('div');
