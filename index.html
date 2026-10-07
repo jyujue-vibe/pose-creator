@@ -9,13 +9,13 @@
   @font-face { font-family: 'Yati Sans'; src: url('Yati_Sans_Variation.ttf') format('truetype'); }
   body { font-family: 'Yati Sans', -apple-system, 'Segoe UI', Roboto, sans-serif; background: #14161c; color: #e8eaf0; padding: 24px 24px 260px; max-width: 980px; margin: 0 auto; }
   button, input { font-family: inherit; }
-  .hero { margin: -24px -24px 20px; padding: 52px 32px 44px; background: linear-gradient(115deg, #ffe0ee 0%, #f2e2ff 38%, #d9e8ff 72%, #c6d6ff 100%); color: #15151f; position: relative; overflow: hidden; }
+  .hero { margin: -24px -24px 20px; padding: 30px 28px 26px; border-radius: 20px; background: linear-gradient(115deg, #ffe0ee 0%, #f2e2ff 38%, #d9e8ff 72%, #c6d6ff 100%); color: #15151f; position: relative; overflow: hidden; }
   .hero::before { content:''; position: absolute; width: 480px; height: 480px; right: -140px; top: -160px; background: radial-gradient(circle, rgba(255,255,255,.65), transparent 70%); pointer-events: none; }
   .hero::after { content:''; position: absolute; width: 380px; height: 380px; left: -120px; bottom: -180px; background: radial-gradient(circle, rgba(255,182,213,.5), transparent 70%); pointer-events: none; }
-  .hero-eyebrow { position: relative; font-size: 13px; font-weight: 600; letter-spacing: .4px; margin-bottom: 14px; opacity: .7; }
-  .hero-title { position: relative; font-size: clamp(36px, 6vw, 58px); font-weight: 800; letter-spacing: -1.5px; line-height: 1.04; margin: 0 0 12px; }
+  .hero-eyebrow { position: relative; font-size: 13px; font-weight: 600; letter-spacing: .4px; margin-bottom: 10px; opacity: .7; }
+  .hero-title { position: relative; font-size: clamp(28px, 5vw, 44px); font-weight: 800; letter-spacing: -1.5px; line-height: 1.04; margin: 0 0 8px; }
   .hero-title em { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 400; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 7px; }
-  .hero-sub { position: relative; font-size: 15px; line-height: 1.5; margin: 0; max-width: 540px; opacity: .72; }
+  .hero-sub { position: relative; font-size: 14px; line-height: 1.5; margin: 0; max-width: 540px; opacity: .72; }
   .char-card { background: #1a1e29; border: 1px solid #2a3044; border-radius: 14px; padding: 16px; margin-bottom: 16px; }
   .char-card-head { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; margin-bottom: 10px; }
   .char-card-row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -79,7 +79,7 @@
   @media (max-width: 820px) {
     .pair-grid { grid-template-columns: 1fr; }
     .lock-grid { grid-template-columns: 1fr; }
-    .hero { padding: 40px 22px 34px; }
+    .hero { padding: 26px 20px 22px; }
   }
   .output-wrap h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #8f96ad; margin-bottom: 10px; }
   #output { background: #10131b; border-radius: 8px; padding: 14px; font-size: 14px; line-height: 1.7; min-height: 70px; color: #f0e6c8; white-space: pre-wrap; }
@@ -868,7 +868,7 @@ function update() {
   document.getElementById('output').textContent = buildPrompt() || 'Select body parts above…';
 }
 
-document.getElementById('charName').addEventListener('input', update);
+document.getElementById('charName').addEventListener('input', () => { update(); renderSavedChars(); });
 
 function switchTab(name) {
   document.querySelectorAll('.tabbar .tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
@@ -938,11 +938,12 @@ function renderSavedChars() {
     const wrap = document.createElement('span');
     wrap.className = 'saved-wrap';
     const b = document.createElement('button');
-    b.className = 'chip';
+    const isActive = document.getElementById('charName').value.trim() === c.name;
+    b.className = 'chip' + (isActive ? ' selected' : '');
     b.textContent = '👤 ' + c.name;
     b.onclick = () => {
       document.getElementById('charName').value = c.name;
-      update();
+      update(); renderSavedChars();
     };
     const x = document.createElement('span');
     x.className = 'saved-x';
